@@ -1,0 +1,89 @@
+@charset "UTF-8";
+
+@mixin lg-webkit($first, $rest...) {
+
+    $direction: false;
+    $wk_direction: false;
+
+    $colorstops: false;
+
+    // 始点/終点キーワードの変換
+    $wk_LT: 0 0;
+    $wk_LB: 0 100%;
+    $wk_RT: 100% 0;
+    $wk_RB: 100% 100%;
+
+    $wk_down:  $wk_LT, $wk_LB;
+    $wk_left:  $wk_LT, $wk_RT;
+    $wk_up:    $wk_LB, $wk_LT;
+    $wk_right: $wk_RT, $wk_LT;
+
+    $wk_to_TL: $wk_RB, $wk_LT;
+    $wk_to_TR: $wk_LB, $wk_LT;
+    $wk_to_BR: $wk_LT, $wk_RB;
+    $wk_to_BL: $wk_RT, $wk_LB;
+
+    // 色だった場合
+    @if type-of(nth($first, 1)) == 'color' {
+        $direction: $first;
+        $wk_direction: $wk_down;
+
+        $colorstops: $rest; // ISSUE
+    }
+    // 'to' からはじまるキーワードの場合
+    @else if type-of($first) == 'list' and nth($first, 1) == 'to' {
+
+        $standard_keywords:
+            to bottom, to left, to top, to right,
+            to top left, to top right, to bottom right, to bottom left,
+            to left top, to right top, to right bottom, to left bottom;
+
+        $webkit_keywords:
+            ($wk_down), ($wk_left), ($wk_up), ($wk_right),
+            ($wk_to_TL), ($wk_to_TR), ($wk_to_BR), ($wk_to_BL),
+            ($wk_to_TL), ($wk_to_TR), ($wk_to_BR), ($wk_to_BL);
+
+        $idx: index($standard_keywords, $first);
+
+        @if $idx {
+            $direction: $first;
+            $wk_direction: nth($webkit_keywords, $idx);
+
+            $colorstops: $rest;
+        }
+    }
+    // 角度かそれ以外か
+    @else {
+        $msg: '-webkit-gradient() に変換できないよ: #{$first}';
+        @warn $msg;
+        /* #{$msg} */
+    }
+
+    // いよいよ出力
+    @if ($colorstops) {
+        $wk_colorstops: null;
+
+        // いけてないけど……
+        @if type-of(nth($first, 1)) == 'color' {
+            $wk_colorstops: conv_wk_colorstop($first);
+        }
+
+        // カラーストップを変換してはくっつけ、を繰り返す
+        @each $cs in $colorstops {
+            $wk_colorstops: join($wk_colorstops, conv_wk_colorstop($cs), comma);
+        }
+
+        background-image: -webkit-gradient(linear, $wk_direction, $wk_colorstops);
+        background-image: linear-gradient($direction, $colorstops);
+    }
+}
+
+// color-stop() に変換する関数
+@function conv_wk_colorstop($colorstop) {
+	// $colorstop は <color> と <percentage> のリスト
+    @if unit(nth($colorstop, 2)) != '%' {
+        $msg: 'パーセンテージで指定しよう: #{$colorstop}';
+        @warn $msg;
+    }
+    @return color-stop(nth($colorstop, 2), nth($colorstop, 1));
+}

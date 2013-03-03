@@ -1,0 +1,31 @@
+@charset "UTF-8";
+
+@mixin lg-keyword($keyword, $colorstops...) {
+    $prefixes: '-webkit-';
+    
+    // 標準のキーワード
+    $standard_keywords:
+        to bottom, to left, to top, to right,
+        to top left, to top right, to bottom right, to bottom left,
+        to left top, to right top, to right bottom, to left bottom;
+        
+    // 接頭辞版のキーワード
+    $legacy_keywords:
+        top, right, bottom, left,
+        bottom right, bottom left, top left, top right,
+        right bottom, left bottom, left top, right top;
+    
+    // キーワードのインデックスを取得
+    $idx: index($standard_keywords, $keyword);
+    
+    // キーワードが不正な場合は何も出さない
+    @if $idx {
+        // マッチする接頭辞版のキーワードを取得
+        $legacy_keyword: nth($legacy_keywords, $idx);
+        
+        @each $prefix in $prefixes {
+            background-image: #{$prefix}linear-gradient($legacy_keyword, $colorstops);
+        }
+        background-image: linear-gradient($keyword, $colorstops);
+    }
+}

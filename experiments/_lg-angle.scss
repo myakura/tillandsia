@@ -1,0 +1,13 @@
+@charset "UTF-8";
+
+@mixin lg-angle($angle, $colorstops...) {
+    $prefixes: '-webkit-';
+    
+    // 接頭辞版の角度の解釈にあわせた値に変換
+    $legacy_angle: (450 - $angle) % 360;
+    
+    @each $prefix in $prefixes {
+        background-image: #{$prefix}linear-gradient($legacy_angle, $colorstops);
+    }
+    background-image: linear-gradient($angle, $colorstops);
+}

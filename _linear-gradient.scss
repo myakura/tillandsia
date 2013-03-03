@@ -1,0 +1,278 @@
+@charset "UTF-8";
+// linear-gradient 0.5.0 | masataka yakura | CC0
+
+// config
+$lg_support_prefixes: '-webkit-';
+$lg_support_webkit_gradient: true;
+$lg_support_svg_gradient: true;
+
+@mixin linear-gradient($first, $rest...) {
+
+    $prefixes: $lg_support_prefixes;
+    $support_wk: $lg_support_webkit_gradient;
+    $support_svg: $lg_support_svg_gradient;
+
+    $direction: false;
+    $legacy_direction: false;
+    $webkit_direction: false;
+    $svg_direction: false;
+
+    $colorstops: false;
+
+    // for -webkit-gradient()
+    $wk_LT: 0 0;
+    $wk_LB: 0 100%;
+    $wk_RT: 100% 0;
+    $wk_RB: 100% 100%;
+    $wk_to_B: $wk_LT, $wk_LB;
+    $wk_to_L: $wk_LT, $wk_RT;
+    $wk_to_T: $wk_LB, $wk_LT;
+    $wk_to_R: $wk_RT, $wk_LT;
+    $wk_to_TL: $wk_RB, $wk_LT;
+    $wk_to_TR: $wk_LB, $wk_LT;
+    $wk_to_BR: $wk_LT, $wk_RB;
+    $wk_to_BL: $wk_RT, $wk_LB;
+    
+    // for SVG data: URL
+    $x1_0: ''; // '%20x1%3D%220%25%22';   // ' x1="0%"'   // default
+    $x1_1: '%20x1%3D%22100%25%22';        // ' x1="100%'
+    $x2_0: '%20x2%3D%220%25%22';          // ' x2="0%"'
+    $x2_1: ''; // '%20x2%3D%22100%25%22'; // ' x2="100%"' // default
+    $y1_0: ''; // '%20y1%3D%220%25%22';   // ' y1="0%"'   // default
+    $y1_1: '%20y1%3D%22100%25%22';        // ' y1="100%'
+    $y2_0: ''; // '%20y2%3D%220%25%22';   // ' y2="0%"'   // default
+    $y2_1: '%20y2%3D%22100%25%22';        // ' y2="100%'
+    $svg_to_B: $x2_0 + $y2_1; // ' x2="0%" y2="100%"'
+    $svg_to_L: $x1_1 + $x2_0; // ' x1="100%" x2="0%"'
+    $svg_to_T: $y1_1 + $x2_0; // ' y1="100%" x2="0%"'
+    $svg_to_R: $x1_0 + $x2_1; // ' x1="0%" x2="100%"'
+    $svg_to_TL: $x1_1 + $y1_1 + $x2_0 + $y2_0;
+    $svg_to_TR: $x1_0 + $y1_1 + $x2_1 + $y2_0;
+    $svg_to_BR: $x1_0 + $y1_0 + $x2_1 + $y2_1;
+    $svg_to_BL: $x1_1 + $y1_0 + $x2_0 + $y2_1;
+
+    // utilities
+    $type_first: type-of($first);
+    $veryfirst: nth($first, 1);
+    $type_veryfirst: type-of($veryfirst);
+
+    // colorstop (no direction specified)
+    @if $type_first == 'color' or $type_veryfirst == 'color' {
+        // gradient goes from top to bottom
+        $direction: null;
+        $legacy_direction: null;
+        $webkit_direction: $wk_to_B;
+        $svg_direction: $svg_to_B;
+
+        // join $first and $rest to form $colorstops
+        // simply join() or append() doesn't work: they split $first into color and stop
+        $colorstops: append((), $first, comma);
+        @each $colorstop in $rest {
+            $colorstops: append($colorstops, $colorstop, comma);
+        }
+    }
+    // keywords
+    @else if $type_first == 'list' and $veryfirst == 'to' {
+        // which direction?
+        $standard_keywords:
+            to bottom, to left, to top, to right,
+            to top left, to top right, to bottom right, to bottom left,
+            to left top, to right top, to right bottom, to left bottom;
+        $legacy_keywords:
+            top, right, bottom, left,
+            bottom right, bottom left, top left, top right,
+            right bottom, left bottom, left top, right top;
+        $webkit_keywords:
+            ($wk_to_B), ($wk_to_L), ($wk_to_T), ($wk_to_R),
+            ($wk_to_TL), ($wk_to_TR), ($wk_to_BR), ($wk_to_BL),
+            ($wk_to_TL), ($wk_to_TR), ($wk_to_BR), ($wk_to_BL);
+        $svg_keywords:
+            ($svg_to_B), ($svg_to_L), ($svg_to_T), ($svg_to_R),
+            ($svg_to_TL), ($svg_to_TR), ($svg_to_BR), ($svg_to_BL),
+            ($svg_to_TL), ($svg_to_TR), ($svg_to_BR), ($svg_to_BL);
+
+        // where to go
+        $idx: index($standard_keywords, $first);
+
+        // if a valid keyword(s) passed
+        @if $idx >= 1 {
+            $direction: if($idx == 1, null, nth($standard_keywords, $idx));
+            $legacy_direction: if($idx == 1, null, nth($legacy_keywords, $idx));
+            $webkit_direction: nth($webkit_keywords, $idx);
+            $svg_direction: nth($svg_keywords, $idx);
+
+            $colorstops: $rest;
+        }
+        @else {
+            // error
+            @warn 'passed direction is not a valid parameter: #{$first}';
+        }
+    }
+    // <angle>
+    @else if $type_first == 'number' and unit($first) == 'deg' {
+    // ISSUE: what about `rad` or `turn` ?
+    
+        $direction: $first;
+        
+        // <angle> is neither supported in -webkit-gradient() nor in SVG
+        // but some values can be converted to keywords
+
+        // if the gradient goes down
+        @if index((-900, -540, -180, 180, 540, 900), $first) {
+            $direction: null;
+            $legacy_direction: null;
+            $webkit_direction: $wk_to_B;
+            $svg_direction: $svg_to_B;
+        }
+        // goes left
+        @else if index((-810, -450, -90, 270, 630, 990), $first) {
+            // $direction: to left;
+            // $legacy_direction: right;
+            $webkit_direction: $wk_to_L;
+            $svg_direction: $svg_to_L;
+        }
+        // goes up
+        @else if index((-1080, -720, -360, 0, 360, 720, 1080), $first) {
+            // $direction: to top;
+            // $legacy_direction: bottom;
+            $webkit_direction: $wk_to_T;
+            $svg_direction: $svg_to_T;
+        }
+        // goes right
+        @else if index((-990, -630, -270, 90, 450, 810), $first) {
+            // $direction: to right;
+            // $legacy_direction: left;
+            $webkit_direction: $wk_to_R;
+            $svg_direction: $svg_to_R;
+        }
+        @else {
+            // convert <angle> for prefixed linear-gradient()
+            $legacy_direction: ($first + 450) % 360;
+
+            // no fallback for legacy webkit and SVG, turning it off
+            @if $support_wk {
+                @warn 'invalid argument: #{$first}. -webkit-gradient() declaration dropped.';
+                $support_wk: false;
+            }
+            @if $support_svg {
+                @warn 'invalid argument: #{$first}. SVG declaration dropped.';
+                $support_svg: false;
+            }
+        }
+
+        $colorstops: $rest;
+    }
+    @else {
+        // error.
+        @warn 'invalid argument: #{$first}. it must either be <color> (+ <stop>), keywords, or <angle>.';
+    }
+
+    // output gradients
+    @if $colorstops {
+
+        // SVG gradient image
+        @if $support_svg {
+
+            $svg_colorstops: '';
+
+            $i: 1;
+            $len_colorstops: length($colorstops);
+            $okay: is_compatible_colorstop(nth($colorstops, $i));
+
+            @while $i <= $len_colorstops and $okay {
+                $current_colorstop: nth($colorstops, $i);
+                $okay: is_compatible_colorstop($current_colorstop);
+                $svg_colorstops: $svg_colorstops + convert_colorstop($current_colorstop, $format: 'svg');
+                $i: $i + 1;
+            }
+
+            @if $okay {
+                $svg_data: 'data:image/svg+xml,' +
+                    '%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E' +
+                        '%3ClinearGradient%20id%3D%22g%22' + $svg_direction + '%3E' +
+                            $svg_colorstops +
+                        '%3C%2FlinearGradient%3E' +
+                    '%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22url(%23g)%22%2F%3E%3C' +
+                    '%2Fsvg%3E';
+                background-image: url($svg_data);
+            }
+            @else {
+                @warn 'invalid argument: #{nth($colorstops, $i)}. declaration dropped.';
+            }
+        }
+        
+        // -webkit-gradient
+        @if $support_wk {
+
+            $webkit_colorstops: null;
+
+            $i: 1;
+            $len_colorstops: length($colorstops);
+            $okay: is_compatible_colorstop(nth($colorstops, $i));
+
+            @while $i <= $len_colorstops and $okay {
+                $current_colorstop: nth($colorstops, $i);
+                $okay: is_compatible_colorstop($current_colorstop);
+                $webkit_colorstops: append($webkit_colorstops, convert_colorstop($current_colorstop, $format: 'webkit'), comma);
+                $i: $i + 1;
+            }
+
+            @if $okay {
+                background-image: -webkit-gradient(linear, $webkit_direction, $webkit_colorstops);
+            }
+            @else {
+                @warn 'invalid argument: #{nth($colorstops, $i)}. declaration dropped.';
+            }
+        }
+
+        // prefixed linear-gradient()s
+        @each $prefix in $prefixes {
+            background-image: #{$prefix}linear-gradient(($legacy_direction, $colorstops));
+        }
+        // standard syntax
+        background-image: linear-gradient(($direction, $colorstops));
+        
+    }
+}
+
+// check if a <colorstop> can be converted to WebKit or SVG ones
+@function is_compatible_colorstop($colorstop) {
+    @return (length($colorstop) == 2 and
+             type-of(nth($colorstop, 1)) == 'color' and
+             type-of(nth($colorstop, 2)) == 'number' and
+             unit(nth($colorstop, 2)) == '%');
+}
+
+// convert CSS <colorstop> to WebKit's or SVG's
+@function convert_colorstop($colorstop, $format) {
+    // invalid condition
+    @if is_compatible_colorstop($colorstop) {
+        @if $format == 'webkit' {
+            // e.g. color-stop(50%, #fc0)
+            @return color-stop(nth($colorstop, 2), nth($colorstop, 1));
+        }
+        @if $format == 'svg' {
+            // e.g. <stop offset="50%" stop-color="rgb(255,204,00)"/>
+            @return '%3Cstop%20offset%3D%22' + nth($colorstop, 2) +
+                '25%22%20stop-color%3D%22' + convenc_rgba(nth($colorstop, 1)) +'%22%2F%3E';
+        }
+    }
+    @else {
+        @warn 'invalid argument: #{$colorstop}.';
+        @return 'error';
+    }
+}
+
+// converts <color> to rgb() or rgba() then percent-encode
+@function convenc_rgba($color) {
+    $r: red($color);
+    $g: green($color);
+    $b: blue($color);
+    $a: alpha($color);
+    @if $a == 1 { // rgb()
+        @return 'rgb%28' + $r + '%2C' + $g + '%2C' + $b + '%29';
+    }
+    @else { // rgba()
+        @return 'rgba%28' + $r + '%2C' + $g + '%2C' + $b + '%2C' + $a + '%29'; 
+    }
+}

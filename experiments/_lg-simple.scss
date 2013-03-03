@@ -1,0 +1,12 @@
+@charset "UTF-8";
+
+// 色だ
+@mixin lg-simple($colorstops...) {
+    // 出力させたい接頭辞を並べる
+    $prefixes: '-webkit-';
+    
+    @each $prefix in $prefixes {
+        background-image: #{$prefix}linear-gradient($colorstops);
+    }
+    background-image: linear-gradient($colorstops);
+}

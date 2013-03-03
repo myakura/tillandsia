@@ -1,0 +1,111 @@
+@charset "UTF-8";
+
+@mixin lg-svg($first, $rest...) {
+
+    $direction: false;
+    $svg_direction: false;
+
+    $colorstops: false;
+
+    // SVGの位置キーワード（x1, x2, y1, y2属性）
+    $x1_0: ''; // '%20x1%3D%220%25%22';   // ' x1="0%"'   // default
+    $x1_1: '%20x1%3D%22100%25%22';        // ' x1="100%'
+    $x2_0: '%20x2%3D%220%25%22';          // ' x2="0%"'
+    $x2_1: ''; // '%20x2%3D%22100%25%22'; // ' x2="100%"' // default
+    $y1_0: ''; // '%20y1%3D%220%25%22';   // ' y1="0%"'   // default
+    $y1_1: '%20y1%3D%22100%25%22';        // ' y1="100%'
+    $y2_0: ''; // '%20y2%3D%220%25%22';   // ' y2="0%"'   // default
+    $y2_1: '%20y2%3D%22100%25%22';        // ' y2="100%'
+
+    $svg_down:  $x2_0 + $y2_1; // ' x2="0%" y2="100%"'
+    $svg_left:  $x1_1 + $x2_0; // ' x1="100%" x2="0%"'
+    $svg_up:    $y1_1 + $x2_0; // ' y1="100%" x2="0%"'
+    $svg_right: $x1_0 + $x2_1; // ' x1="0%" x2="100%"'
+
+    $svg_to_TL: $x1_1 + $y1_1 + $x2_0 + $y2_0;
+    $svg_to_TR: $x1_0 + $y1_1 + $x2_1 + $y2_0;
+    $svg_to_BR: $x1_0 + $y1_0 + $x2_1 + $y2_1;
+    $svg_to_BL: $x1_1 + $y1_0 + $x2_0 + $y2_1;
+
+    // 色だった場合
+    @if type-of(nth($first, 1)) == 'color' {
+        $direction: $first;
+        $svg_direction: $svg_down;
+
+        $colorstops: $rest; // ISSUE
+    }
+    // 'to' からはじまるキーワードの場合
+    @else if type-of($first) == 'list' and nth($first, 1) == 'to' {
+
+        $standard_keywords:
+            to bottom, to left, to top, to right,
+            to top left, to top right, to bottom right, to bottom left,
+            to left top, to right top, to right bottom, to left bottom;
+
+        $svg_keywords:
+            ($svg_down), ($svg_left), ($svg_up), ($svg_right),
+            ($svg_to_TL), ($svg_to_TR), ($svg_to_BR), ($svg_to_BL),
+            ($svg_to_TL), ($svg_to_TR), ($svg_to_BR), ($svg_to_BL);
+
+        $idx: index($standard_keywords, $first);
+
+        @if $idx {
+            $direction: $first;
+            $svg_direction: nth($svg_keywords, $idx);
+
+            $colorstops: $rest;
+        }
+    }
+    // 角度かそれ以外か
+    @else {
+        $msg: 'SVGに変換できないよ: #{$first}';
+        @warn $msg;
+        /* #{$msg} */
+    }
+
+    // いよいよ出力
+    @if ($colorstops) {
+        $svg_colorstops: '';
+
+        // いけてないけど……
+        @if type-of(nth($first, 1)) == 'color' {
+            $svg_colorstops: conv_svg_colorstop($first);
+        }
+
+        // カラーストップを変換してはくっつけ、を繰り返す
+        @each $cs in $colorstops {
+            $svg_colorstops: $svg_colorstops + conv_svg_colorstop($cs);
+        }
+        // data: URL
+        $svg_data: 'data:image/svg+xml,' +
+            '%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E' +
+                '%3ClinearGradient%20id%3D%22g%22' + $svg_direction + '%3E' +
+                    $svg_colorstops +
+                '%3C%2FlinearGradient%3E' +
+            	'%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22url(%23g)%22%2F%3E%3C' +
+            '%2Fsvg%3E';
+        background-image: url($svg_data);
+        background-image: linear-gradient($direction, $colorstops);
+    }
+}
+
+// color-stop() に変換する関数
+@function conv_svg_colorstop($colorstop) {
+	// $colorstop は <color> と <percentage> のリスト
+	$color: nth($colorstop, 1);
+	$stop: nth($colorstop, 2);
+
+    @if unit($stop) != '%' {
+        $msg: 'パーセンテージで指定しよう: #{$colorstop}';
+        @warn $msg;
+    }
+    $svg_stop: $stop / 1%;
+
+    $r: red($color);
+    $g: green($color);
+    $b: blue($color);
+    $a: alpha($color);
+    $svg_color: if($a == 1, 'rgb%28' + $r + '%2C' + $g + '%2C' + $b + '%29', 'rgba%28' + $r + '%2C' + $g + '%2C' + $b + '%2C' + $a + '%29');
+
+    @return '%3Cstop%20offset%3D%22' + $svg_stop + '%22%20stop-color%3D%22' + $svg_color + '%22%2F%3E'
+}

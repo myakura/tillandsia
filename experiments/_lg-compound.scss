@@ -1,0 +1,64 @@
+@charset "UTF-8";
+
+@mixin lg-compound($first, $rest...) {
+    $prefixes: '-webkit-';
+
+    // 出力用の変数
+    $direction: false;
+    $legacy_direction: false;
+    $colorstops: false;
+    
+    // $first が color → 方向がない → パート1
+    @if type-of($first) == 'color' {
+        // direction って名前よくないね
+        $direction: $first;
+        $legacy_direction: $first;
+        
+        $colorstops: $rest;
+    }
+    // $first がリスト → キーワードかも → パート2
+    @else if type-of($first) == 'list' {
+
+        // 標準のキーワード
+        $standard_keywords:
+            to bottom, to left, to top, to right,
+            to top left, to top right, to bottom right, to bottom left,
+            to left top, to right top, to right bottom, to left bottom;
+            
+        // 接頭辞版のキーワード
+        $legacy_keywords:
+            top, right, bottom, left,
+            bottom right, bottom left, top left, top right,
+            right bottom, left bottom, left top, right top;
+        
+        // キーワードのインデックスを取得
+        $idx: index($standard_keywords, $first);
+
+        @if $idx {
+            $direction: $first;
+            $legacy_direction: nth($legacy_keywords, $idx);
+            $colorstops: $rest;
+        }
+    }
+    // $first が number → 角度かも
+    @else if type-of($first) == 'number' {
+        // unit() 関数で角度 (deg) かを確認
+        // deg の場合 → パート3
+        @if unit($first) == 'deg' {
+            $direction: $first;
+            $legacy_direction: (450 - $first) % 360;
+            $colorstops: $rest;
+        }
+    }
+    // それ以外はエラー
+    @else { @warn 'エラーですよん'; }
+    
+    // カラーストップが確認できたら出力
+    @if ($colorstops) {
+        @each $prefix in $prefixes {
+            background-image: #{$prefix}linear-gradient(
+                $legacy_direction, $colorstops);
+        }
+        background-image: linear-gradient($direction, $colorstops);
+    }
+}
