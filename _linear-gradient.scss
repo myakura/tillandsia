@@ -1,10 +1,10 @@
 @charset "UTF-8";
-// linear-gradient 0.5.0 | masataka yakura | CC0
+// linear-gradient 0.5.1 | masataka yakura | CC0
 
 // config
-$lg_support_prefixes: '-webkit-';
-$lg_support_webkit_gradient: true;
-$lg_support_svg_gradient: true;
+$lg_support_prefixes: '-webkit-' !default;
+$lg_support_webkit_gradient: true !default;
+$lg_support_svg_gradient: true !default;
 
 @mixin linear-gradient($first, $rest...) {
 
