@@ -1,0 +1,65 @@
+@import '../experiments/lg-simple', '../experiments/lg-keyword', '../experiments/lg-angle', '../experiments/lg-compound', '../experiments/lg-webkit', '../experiments/lg-svg', '../linear-gradient';
+
+// simple
+.test.simple {
+    @include lg-simple(#fff, #fc0);
+    @include lg-simple(#fff 0%, #fc0 100%);
+}
+// keyword
+.test.kwd {
+    @include lg-keyword(to bottom right, #fc0, #fff);
+    @include lg-keyword(to left, #fc0, #fff);
+    @include lg-keyword(to top left, #fc0 20%, #fff 80%);
+}
+// angle
+.test.angle {
+    @include lg-angle(0deg, #fff, #fc0);
+    @include lg-angle(30deg, #fff, #fc0);
+    @include lg-angle(90deg, #fff, #fc0);
+    @include lg-angle(-180deg, #fff, #fc0);
+}
+
+// compound
+.test.compound.simple {
+    @include lg-compound(#fff, #fc0);
+}
+.test.compound.kwd {
+    @include lg-compound(to right top, #fc0, #fff);
+}
+.test.compound.angle {
+    @include lg-compound(-180deg, #fff, #fc0);
+}
+
+// webkit
+.test.webkit.simple {
+    @include lg-webkit(#fff 0%, #fc0 100%);
+}
+.test.webkit.kwd {
+    @include lg-webkit(to right top, #fc0 0%, #fff 100%);
+}
+.test.webkit.angle {
+    // @include lg-webkit(-180deg, #fff, #fc0);
+}
+
+// svg
+.test.svg.simple {
+    @include lg-svg(#fff 0%, #fc0 100%);
+}
+.test.svg.kwd {
+    @include lg-svg(to right top, #fc0 0%, #fff 100%);
+}
+.test.svg.angle {
+    // @include lg-svg(-180deg, #fff, #fc0);
+}
+
+.test.lg.all {
+    /* ----- */
+    @include linear-gradient(#fff 0%, #fc0 100%);
+    /* ----- */
+    @include linear-gradient(to right top, #fc0 0%, #fff 100%);
+    /* ----- */
+    @include linear-gradient(-180deg, #fff, #fc0);
+    /* ----- */
+    @include linear-gradient(30deg, #fff, #fc0);
+    /* ----- */
+}
