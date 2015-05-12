@@ -4,7 +4,6 @@
 
     $direction: false;
     $wk_direction: false;
-
     $colorstops: false;
 
     // 始点/終点キーワードの変換
@@ -27,35 +26,36 @@
     @if type-of(nth($first, 1)) == 'color' {
         $direction: $first;
         $wk_direction: $wk_down;
-
         $colorstops: $rest; // ISSUE
     }
     // 'to' からはじまるキーワードの場合
     @else if type-of($first) == 'list' and nth($first, 1) == 'to' {
 
-        $standard_keywords:
-            to bottom, to left, to top, to right,
-            to top left, to top right, to bottom right, to bottom left,
-            to left top, to right top, to right bottom, to left bottom;
+        $keywords_map: (
+            to bottom: ($wk_down),
+            to left: ($wk_left),
+            to top: ($wk_up),
+            to right: ($wk_right),
+            to top left: ($wk_to_TL),
+            to top right: ($wk_to_TR),
+            to bottom right: ($wk_to_BR),
+            to bottom left: ($wk_to_BL),
+            to left top: ($wk_to_TL),
+            to right top: ($wk_to_TR),
+            to right bottom: ($wk_to_BR),
+            to left bottom: ($wk_to_BL)
+            );
 
-        $webkit_keywords:
-            ($wk_down), ($wk_left), ($wk_up), ($wk_right),
-            ($wk_to_TL), ($wk_to_TR), ($wk_to_BR), ($wk_to_BL),
-            ($wk_to_TL), ($wk_to_TR), ($wk_to_BR), ($wk_to_BL);
-
-        $idx: index($standard_keywords, $first);
-
-        @if $idx {
+        @if map-has-key($keywords_map, $first) {
             $direction: $first;
-            $wk_direction: nth($webkit_keywords, $idx);
-
+            $wk_direction: map-get($keywords_map, $first);
             $colorstops: $rest;
         }
     }
     // 角度かそれ以外か
     @else {
         $msg: '-webkit-gradient() に変換できないよ: #{$first}';
-        @warn $msg;
+        @error $msg;
         /* #{$msg} */
     }
 
@@ -83,7 +83,7 @@
 	// $colorstop は <color> と <percentage> のリスト
     @if unit(nth($colorstop, 2)) != '%' {
         $msg: 'パーセンテージで指定しよう: #{$colorstop}';
-        @warn $msg;
+        @error $msg;
     }
     @return color-stop(nth($colorstop, 2), nth($colorstop, 1));
 }

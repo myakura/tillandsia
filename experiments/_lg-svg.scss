@@ -37,29 +37,50 @@
     // 'to' からはじまるキーワードの場合
     @else if type-of($first) == 'list' and nth($first, 1) == 'to' {
 
-        $standard_keywords:
-            to bottom, to left, to top, to right,
-            to top left, to top right, to bottom right, to bottom left,
-            to left top, to right top, to right bottom, to left bottom;
+        // $standard_keywords:
+        //     to bottom, to left, to top, to right,
+        //     to top left, to top right, to bottom right, to bottom left,
+        //     to left top, to right top, to right bottom, to left bottom;
 
-        $svg_keywords:
-            ($svg_down), ($svg_left), ($svg_up), ($svg_right),
-            ($svg_to_TL), ($svg_to_TR), ($svg_to_BR), ($svg_to_BL),
-            ($svg_to_TL), ($svg_to_TR), ($svg_to_BR), ($svg_to_BL);
+        // $svg_keywords:
+        //     ($svg_down), ($svg_left), ($svg_up), ($svg_right),
+        //     ($svg_to_TL), ($svg_to_TR), ($svg_to_BR), ($svg_to_BL),
+        //     ($svg_to_TL), ($svg_to_TR), ($svg_to_BR), ($svg_to_BL);
 
-        $idx: index($standard_keywords, $first);
+        // $idx: index($standard_keywords, $first);
 
-        @if $idx {
+        // @if $idx {
+        //     $direction: $first;
+        //     $svg_direction: nth($svg_keywords, $idx);
+
+        //     $colorstops: $rest;
+        // }
+
+        $keywords_map: (
+            to bottom: ($svg_down),
+            to left: ($svg_left),
+            to top: ($svg_up),
+            to right: ($svg_right),
+            to top left: ($svg_to_TL),
+            to top right: ($svg_to_TR),
+            to bottom right: ($svg_to_BR),
+            to bottom left: ($svg_to_BL),
+            to left top: ($svg_to_TL),
+            to right top: ($svg_to_TR),
+            to right bottom: ($svg_to_BR),
+            to left bottom: ($svg_to_BL)
+            );
+
+        @if map-has-key($first) {
             $direction: $first;
-            $svg_direction: nth($svg_keywords, $idx);
-
+            $svg_direction: map-get($keywords_map, $first);
             $colorstops: $rest;
         }
     }
     // 角度かそれ以外か
     @else {
         $msg: 'SVGに変換できないよ: #{$first}';
-        @warn $msg;
+        @error $msg;
         /* #{$msg} */
     }
 
@@ -97,7 +118,7 @@
 
     @if unit($stop) != '%' {
         $msg: 'パーセンテージで指定しよう: #{$colorstop}';
-        @warn $msg;
+        @error $msg;
     }
     $svg_stop: $stop / 1%;
 

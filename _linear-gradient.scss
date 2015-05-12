@@ -105,7 +105,7 @@ $lg_support_svg_gradient: true !default;
         }
         @else {
             // error
-            @warn 'passed direction is not a valid parameter: #{$first}';
+            @error 'passed direction is not a valid parameter: #{$first}';
         }
     }
     // <angle>
@@ -151,11 +151,11 @@ $lg_support_svg_gradient: true !default;
 
             // no fallback for legacy webkit and SVG, turning it off
             @if $support_wk {
-                @warn 'invalid argument: #{$first}. -webkit-gradient() declaration dropped.';
+                @error 'invalid argument: #{$first}. -webkit-gradient() declaration dropped.';
                 $support_wk: false;
             }
             @if $support_svg {
-                @warn 'invalid argument: #{$first}. SVG declaration dropped.';
+                @error 'invalid argument: #{$first}. SVG declaration dropped.';
                 $support_svg: false;
             }
         }
@@ -164,7 +164,7 @@ $lg_support_svg_gradient: true !default;
     }
     @else {
         // error.
-        @warn 'invalid argument: #{$first}. it must either be <color> (+ <stop>), keywords, or <angle>.';
+        @error 'invalid argument: #{$first}. it must either be <color> (+ <stop>), keywords, or <angle>.';
     }
 
     // output gradients
@@ -197,7 +197,7 @@ $lg_support_svg_gradient: true !default;
                 background-image: url($svg_data);
             }
             @else {
-                @warn 'invalid argument: #{nth($colorstops, $i)}. declaration dropped.';
+                @error 'invalid argument: #{nth($colorstops, $i)}. declaration dropped.';
             }
         }
         
@@ -221,7 +221,7 @@ $lg_support_svg_gradient: true !default;
                 background-image: -webkit-gradient(linear, $webkit_direction, $webkit_colorstops);
             }
             @else {
-                @warn 'invalid argument: #{nth($colorstops, $i)}. declaration dropped.';
+                @error 'invalid argument: #{nth($colorstops, $i)}. declaration dropped.';
             }
         }
 
@@ -258,7 +258,7 @@ $lg_support_svg_gradient: true !default;
         }
     }
     @else {
-        @warn 'invalid argument: #{$colorstop}.';
+        @error 'invalid argument: #{$colorstop}.';
         @return 'error';
     }
 }
