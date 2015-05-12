@@ -1,0 +1,148 @@
+// -linear-gradient() v0.9.5 | Public Domain
+
+// if support Gingerbread or iOS4
+$supportLegacyWebKit: true;
+
+// converting CSS colorstop to WebKit colorstop
+@function convertColorstop($colorstop) {
+  $stop: null;
+  $color: null;
+
+  @if length($colorstop) == 2 {
+    $cs1: nth($colorstop, 1);
+    $cs2: nth($colorstop, 2);
+    @if type_of($cs1) == "color" {
+      $color: $cs1;
+    }
+    @if type_of($cs2) == "number" {
+      // handling unitless zero
+      @if $cs2 == 0 {
+        $stop: 0%;
+      }
+      // all stops needs to be <percentage>s
+      @else if unit($cs2) == "%" {
+        $stop: $cs2;
+      }
+      @else { // FAIL
+        $stop: "error: #{$cs2}";
+      }
+    }
+    @return color-stop($stop, $color);
+  }
+  @else if $colorstop == null {
+    @return null;
+  }
+  @else { // FAIL
+    @return "error: #{$colorstop}";
+  }
+}
+
+@mixin -linear-gradient($first, $rest...) {
+  // variables for the standard syntax
+  $dirStandard: false; // can be null in case of the gradient goes from top bottom
+  $colorstop: false;
+
+  // prefix(es) to support
+  // Note: as of Oct 2012, there's no need for supporting -moz- and -ms-
+  $prefixes: -webkit-; // -o-;
+
+  // whether to include -webkit-gradient()
+  // if set to true, gradients are less expressible
+  $dirWebKit: false;
+  $colorstopWebKit: null;
+
+  // webkit directional keywords
+  $lefttop: 0 0;
+  $leftbtm: 0 100%;
+  $righttop: 100% 0;
+  $rightbtm: 100% 100%;
+  $downward: $lefttop, $leftbtm;
+  $leftword: $lefttop, $righttop;
+  $upward: $leftbtm, $lefttop;
+  $rightward: $righttop, $lefttop;
+
+  @if not $supportLegacyWebKit { $dirWebKit: null; }
+
+  // angles
+  @if type_of($first) == "number" and unit($first) == "deg" {
+
+    @if $supportLegacyWebKit {
+      @if index((-990, -630, -270, 90, 450, 810), $first) {
+        $dirWebKit: $downward;
+      }
+      @else if index((-900, -540, -180, 180, 540, 900), $first) {
+        $dirWebKit: $leftword;
+      }
+      @else if index((-810, -450, -90, 270, 630, 990), $first) {
+        $dirWebKit: $upward;
+      }
+      @else if index((-1080, -720, -360, 0, 360, 720, 1080), $first) {
+        $dirWebKit: $rightward;
+      }
+    }
+
+    // if it goes from top to bottom
+    @if index((-990, -630, -270, 90, 450, 810), $first) {
+      $dirStandard: null;
+    }
+    @else {
+      // hope 1080 is enough...
+      @for $i from -1080 through 1080 {
+        @if $i == $first {
+          $dirStandard: abs($first - 450) % 360;
+        }
+      }
+    }
+    $colorstop: $rest;
+  }
+
+  // contains only colorstops: no keywords nor angles
+  @else if type_of(nth($first, 1)) == "color" {
+    $dirStandard: null;
+    $colorstop: join($first, $rest, comma);
+  }
+
+  // assuming else are keywords
+  @else {
+    // map like
+    $mapCSSKeyword: (
+      (top, right, bottom, left, top left, top right, right top, right bottom, bottom right, bottom left, left top, left bottom)
+      (null, to left, to top, to right, to bottom right, to bottom left, to bottom left, to top left, to top left, to top right, to bottom right, to top right)
+    );
+    // $mapWebKitKeyword: ((left top, left bottom), (left top, right top), (left bottom, left top), (right top, left top), (left top, right bottom), (right top, left bottom), (right top, left botoom), (right bottom, left top), (right bottom, left top), (left bottom, right top), (left top, right bottom), (left bottom, right top));
+    $mapWebKitKeyword: (($downward), ($leftword), ($upward), ($rightward), ($lefttop, $rightbtm), ($righttop, $leftbtm), ($righttop, $leftbtm), ($rightbtm, $lefttop), ($rightbtm, $lefttop), ($leftbtm, $righttop), ($lefttop, $rightbtm), ($leftbtm, $righttop));
+
+    // whether keyword found
+    $idx: index(nth($mapCSSKeyword, 1), $first);
+    @if $idx {
+      $dirStandard: nth(nth($mapCSSKeyword, 2), $idx);
+      $colorstop: $rest;
+      @if $supportLegacyWebKit {
+        $dirWebKit: nth($mapWebKitKeyword, $idx);
+      }
+    }
+  }
+
+  // finally
+  @if $colorstop {
+    @if $supportLegacyWebKit {
+      @each $cs in $colorstop {
+        $colorstopWebKit: append($colorstopWebKit, convertColorstop($cs), comma);
+      }
+      background-image: -webkit-gradient(linear, $dirWebKit, $colorstopWebKit);
+    }
+    // if it is a top-to-bottom, put only colorstops
+    @if $dirStandard == null {
+      @each $prefix in $prefixes {
+      background-image: #{$prefix}linear-gradient($colorstop); }
+      background-image: linear-gradient($colorstop);
+    }
+    @else if $dirStandard {
+      @each $prefix in $prefixes {
+      background-image: #{$prefix}linear-gradient(($first, $colorstop)); }
+      background-image: linear-gradient(($dirStandard, $colorstop));
+    }
+    @else { /* something goes wrong with $dirStandard */ }
+  }
+  @else { /* no $colorstop */ }
+}

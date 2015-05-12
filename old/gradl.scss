@@ -1,0 +1,88 @@
+// if support Gingerbread or iOS4
+$supportLegacyWebKit: true;
+
+// converting CSS colorstop to WebKit colorstop
+@function colorstopWK($colorstop) {
+	$stop: null;
+	$color: null;
+
+	@if length($colorstop) == 2 {
+		$cs1: nth($colorstop, 1);
+		$cs2: nth($colorstop, 2);
+		@if type_of($cs1) == "color" {
+			$color: $cs1;
+		}
+		@if type_of($cs2) == "number" {
+			// handling unitless zero
+			@if $cs2 == 0 {
+				$stop: 0%;
+			}
+			// all stops needs to be <percentage>s
+			@else if unit($cs2) == "%" {
+				$stop: $cs2;
+			}
+			@else { // FAIL
+				$stop: "error: #{$cs2}";
+			}
+		}
+		@return color-stop($stop, $color);
+	}
+	@else { // FAIL
+		@return "error: #{$colorstop}";
+	}
+}
+
+@mixin -gradl($first, $rest...) {
+	var-first: $first;
+	var-rest: $rest;
+
+	$stddir: null;
+	$colorstop: null;
+
+	// $prefixes: '-webkit-';
+
+	// to include -webkit-gradient
+	// @if $supportLegacyWebKit {
+
+		$wkdir: null;
+
+		@if type_of(nth($first, 1)) == "color" {
+			/* color */
+			$wkdir: 0 0, 0 100%; // left top, left bottom
+			$colorstop: colorstopWK($first);
+			@each $cs in $rest {
+				$colorstop: append($colorstop, colorstopWK($cs), comma);
+			}
+		}
+
+		@if type_of($first) == "list" {
+
+		}
+
+
+
+		/* ----- */
+		background-image: -webkit-gradient(linear, $wkdir, $colorstop);
+
+	// }
+}
+
+.test_colorstopWK {
+	/* PASS: #fff, 0% */
+	var-test1: colorstopWK((#fff, 0%));
+	/* PASS: #fff, 0 */
+	var-test2: colorstopWK((#fff, 0));
+	/* FAIL: #fff */
+	var-test3: colorstopWK((#fff));
+	/* FAIL: #fff 20px */
+	var-test3: colorstopWK((#fff, 20px));
+}
+
+.test_-gradl {
+	@include -gradl(#fff 0%, #fc0 30%, #f90 60%);
+}
+
+body {
+	@extend .test_-gradl;
+	height: 150px;
+}

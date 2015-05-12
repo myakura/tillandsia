@@ -1,0 +1,144 @@
+
+@function convertColorToEncodedRGBNotation($color) {
+	$red: red($color);
+	$green: green($color);
+	$blue: blue($color);
+	$alpha: alpha($color);
+	// if no alpha simply return rgb()
+	@if $alpha == 1 {
+		// encodeURIComponent('rgb(' + $red + ',' + $green + ',' + $blue + ')')
+		@return "rgb%28" + $red + "%2C" + $green + "%2C" + $blue + "%29";
+	}
+	@else {
+		// encodeURIComponent('rgb(' + $red + ',' + $green + ',' + $blue + ',' + $alpha + ')')
+		@return "rgba%28" + $red + "%2C" + $green + "%2C" + $blue + "%2C" + $alpha + "%29";	
+	}
+}
+
+@function convertColorstopToSVGColorstop($colorstop) {
+  $stop: null;
+  $color: null;
+
+  @if length($colorstop) == 2 {
+    $cs1: nth($colorstop, 1);
+    $cs2: nth($colorstop, 2);
+    @if type_of($cs1) == "color" {
+      $color: convertColorToEncodedRGBNotation($cs1);
+    }
+    @if type_of($cs2) == "number" {
+      // leave unitless zero as is
+      @if $cs2 == 0 {
+        $stop: 0;
+      }
+      // convert percentage into a number (for percent encoding)
+      @else if unit($cs2) == "%" {
+        $stop: ($cs2 / 1%);
+      }
+      @else { // FAIL
+        $stop: "error: #{$cs2}";
+      }
+    }
+    // encodeURIComponent('<stop offset="' + $stop + '%" stop-color="' + $color + '"/>')
+    @return "%3Cstop%20offset%3D%22" + $stop + "%25%22%20stop-color%3D%22" + $color + "%22%2F%3E";
+  }
+  @else if $colorstop == null {
+    @return null;
+  }
+  @else { // FAIL
+    @return "error: #{$colorstop}";
+  }
+}
+
+@function convertLegacyDirToEncodedSVGDir($keywords) {
+  // x1, x2, y1, y2 attributes
+  $x1_0: '' // '%20x1%3D%220%25%22'; // default
+  $x1_1: '%20x1%3D%22100%25%22';
+  $x2_0: '%20x2%3D%220%25%22';
+  $x2_1: '' // '%20x2%3D%22100%25%22'; // default
+  $y1_0: '' // '%20y1%3D%220%25%22'; // default
+  $y1_1: '%20y1%3D%22100%25%22';
+  $y2_0: '' // '%20y2%3D%220%25%22'; // default
+  $y2_1: '%20y2%3D%22100%25%22';
+
+  // encodeURIComponent(' x2="0%" y2="100%"')
+  $svgdownward: $x2_0 + $y2_1;
+  // encodeURIComponent(' x1="100% x2="0%"')
+  $svgleftward: $x1_1 + $x2_0;
+  // encodeURIComponent(' y1="100%" x2="0%"')
+  $svgupward: $y1_1 + $x2_0;
+  // encodeURIComponent(' x1="0%" x2="100%"')
+  $svgrightward: $x1_0 + $x2_1;
+
+  $svgtobtmright: $x1_0 + $y1_0 + $x2_1 + $y2_1;
+  $svgtobtmleft: $x1_1 + $y1_0 + $x2_0 + $y2_1;
+  $svgtotopleft: $x1_1 + $y1_1 + $x2_0 + $y2_0;
+  $svgtotopright: $x1_0 + $y1_1 + $x2_1 + $y2_0;
+
+  $mapSVGKeyword: (($svgdownward), ($svgleftward), ($svgupward), ($svgrightward), ($svgtobtmright), ($svgtobtmleft), ($svgtobtmleft), ($svgtotopleft), ($svgtotopleft), ($svgtotopright), ($svgtobtmright), ($svgtotopright));
+
+  $svgdir: false;
+
+  $idx: index(nth($mapCSSKeyword, 1), $keywords);
+
+  @if $idx {
+    $svgdir: nth($mapSVGKeyword, $idx);
+  }
+
+  @return $svgdir;
+}
+
+
+/*
+<svg xmlns="http://www.w3.org/2000/svg">
+<linearGradient id="g" x2="0%" y2="100%">
+<stop offset="0%" stop-color="#fc0"/>
+<stop offset="100%" stop-color="#f90"/>
+</linearGradient><rect width="100%" height="100%" fill="url(#g)"/></svg>
+
+%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E
+%3ClinearGradient%20id%3D%22g%22   %20   x2%3D%220%25%22   %20   y2%3D%22100%25%22   %3E
+%3Cstop%20offset%3D%22   %25%22%20stop-color%3D%22   %22%2F%3E
+%3Cstop%20offset%3D%22   %25%22%20stop-color%3D%22   %22%2F%3E
+%3C%2FlinearGradient%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22url(%23g)%22%2F%3E%3C%2Fsvg%3E
+
+`%` -> %25
+`"` -> %22
+` ` -> +
+`=` -> %3D
+
+data:image/svg+xml,
+*/
+
+// direction
+
+// $svgdownward: percEncode('x2="0%" y2="100%"');
+// $svgrightward: percEncode('x1="100% x2="0%"');
+// $svgupward: percEncode('y1="100%" x2="0%"');
+// $svgleftward: null;
+
+// '<linearGradient id="g"' + $dirSVG + '>'
+
+// // color stop
+
+// '<stop offset="' + $stop + '" stop-color="' + convertColorToEncodedRGBNotation($color) + '"/>'
+
+// @each $cs in $colorstop {
+// 	$svgstops: 
+// }
+
+// converting color
+
+
+
+.test {
+	color_fff: convertColorToEncodedRGBNotation(#fff);
+	color_fc0: convertColorToEncodedRGBNotation(#fc0);
+	color_fc0_04: convertColorToEncodedRGBNotation(rgba(255,204,0,0.4));
+	colorstop: (#fc0 20%);
+}
+
+
+
+
+
+
